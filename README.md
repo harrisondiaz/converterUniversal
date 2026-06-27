@@ -106,34 +106,57 @@ converterUniversal/
 └── package.json
 ```
 
-## Deploy on Vercel
+## Deploy online (cloud)
 
-The project includes serverless API routes and a static frontend ready for Vercel.
+**Vercel does not work** for this app — yt-dlp and ffmpeg need a real server, not serverless functions.
 
-### One-click deploy
+### Recommended: Railway (free tier)
 
-1. Push this repo to GitHub
-2. Import the project at [vercel.com/new](https://vercel.com/new)
-3. Vercel runs `npm run build:vercel` (downloads Linux yt-dlp binary)
+1. Go to [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub**
+2. Select `converterUniversal` — Railway detects the `Dockerfile` automatically
+3. Deploy — you get a URL like `https://converter-universal.up.railway.app`
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/harrisondiaz/converterUniversal)
+
+### Alternative: Render
+
+1. Go to [render.com](https://render.com) → **New Web Service**
+2. Connect the GitHub repo
+3. Set **Runtime: Docker** — uses the included `render.yaml`
 4. Deploy
 
-Or with the CLI:
+### Alternative: Docker anywhere
+
+```bash
+docker build -t converter-universal .
+docker run -p 8080:8080 converter-universal
+# Open http://localhost:8080
+```
+
+### Comparison
+
+| Platform | Works? | Why |
+|----------|--------|-----|
+| **Your PC** (`npm run web`) | ✅ Best | No limits, full yt-dlp + ffmpeg |
+| **Desktop** (`npm start`) | ✅ Best | Choose save folder |
+| **Railway / Render / Docker** | ✅ Good | Real Linux server with yt-dlp |
+| **Vercel** | ❌ No | Serverless — cannot run yt-dlp binaries |
+
+## Deploy on Vercel (not recommended)
+
+Vercel serverless functions **cannot reliably run yt-dlp**. The UI may deploy, but downloads will fail. Use Railway or Render instead.
+
+<details>
+<summary>Legacy Vercel setup (experimental)</summary>
 
 ```powershell
 npm i -g vercel
 vercel
 ```
 
-### Vercel limitations
+Limitations: 10–60s timeout, no persistent binaries, downloads often fail.
 
-| Topic | Detail |
-|-------|--------|
-| **Timeout** | Downloads up to **60 seconds** (Pro plan). Long videos may fail on Hobby (10s). |
-| **Storage** | Temp files in `/tmp` (~512 MB). Large 4K files may fail. |
-| **Best for** | Short clips, audio, reels, TikToks |
-| **Local use** | No limits — use `npm run web` or `npm start` on your PC |
-
-> For heavy daily use, keep the desktop/local web mode. Vercel is best for sharing the UI publicly with light downloads.
+</details>
 
 ## License
 

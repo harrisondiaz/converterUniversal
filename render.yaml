@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: converter-universal
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/ytdlp/status
+    envVars:
+      - key: NODE_ENV
+        value: production

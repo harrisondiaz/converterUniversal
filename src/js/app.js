@@ -124,6 +124,8 @@
   async function checkYtdlp() {
     const result = await api.checkYtdlp();
     state.ytdlpReady = result.installed;
+    const onVercel = location.hostname.includes('vercel.app');
+
     els.ytdlpStatus.classList.remove('ready', 'error');
     if (result.installed) {
       els.ytdlpStatus.classList.add('ready');
@@ -137,9 +139,25 @@
       els.ytdlpStatus.querySelector('.status-text').textContent = 'yt-dlp missing';
       els.settingYtdlpBadge.textContent = 'Not found';
       els.settingYtdlpBadge.className = 'setting-badge err';
-      els.settingYtdlpInfo.textContent = 'Install required';
+      els.settingYtdlpInfo.textContent = onVercel
+        ? 'Vercel is not supported for downloads'
+        : 'Install required';
       els.installHint.classList.remove('hidden');
-      els.installCommand.textContent = result.installHint;
+      if (onVercel) {
+        els.installHint.innerHTML = `
+          <p><strong>Vercel no puede ejecutar yt-dlp.</strong> Es serverless (sin binarios persistentes).</p>
+          <p style="margin-top:8px">Alternativas que sí funcionan:</p>
+          <ul class="alt-list">
+            <li><strong>Railway</strong> — conecta el repo, usa el Dockerfile incluido</li>
+            <li><strong>Render</strong> — importa el repo, elige Docker</li>
+            <li><strong>Local</strong> — <code>npm run web</code> en tu PC</li>
+            <li><strong>Escritorio</strong> — <code>npm start</code></li>
+          </ul>`;
+      } else {
+        els.installHint.innerHTML = `
+          <p><strong>yt-dlp not found.</strong> Install it to enable downloads:</p>
+          <code id="install-command">${result.installHint || 'npm run setup'}</code>`;
+      }
     }
   }
 
@@ -147,7 +165,13 @@
     const url = els.urlInput.value.trim();
     if (!url || state.analyzing) return;
     if (!state.ytdlpReady) {
-      showToast('Install yt-dlp first — open Settings for instructions', 'error');
+      const onVercel = location.hostname.includes('vercel.app');
+      showToast(
+        onVercel
+          ? 'Vercel no soporta descargas — usa Railway o tu PC (npm run web)'
+          : 'Install yt-dlp first — open Settings for instructions',
+        'error',
+      );
       openModal();
       return;
     }

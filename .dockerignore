@@ -1,0 +1,8 @@
+node_modules
+.git
+public
+bin
+downloads
+*.log
+.env
+electron/node_modules

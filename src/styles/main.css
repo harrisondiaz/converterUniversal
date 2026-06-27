@@ -741,6 +741,22 @@ body {
   color: var(--accent);
 }
 
+.alt-list {
+  margin: 8px 0 0 18px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.alt-list code {
+  display: inline;
+  padding: 2px 6px;
+  background: var(--bg-mid);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+
 /* Toast */
 .toast {
   position: fixed;
