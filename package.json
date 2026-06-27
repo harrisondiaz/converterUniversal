@@ -8,7 +8,7 @@
     "dev": "electron . --dev",
     "web": "node server/web.js",
     "setup": "node scripts/setup-ytdlp.js",
-    "build:vercel": "node scripts/setup-ytdlp.js --linux"
+    "build:vercel": "node scripts/build-vercel.js"
   },
   "keywords": [
     "youtube",

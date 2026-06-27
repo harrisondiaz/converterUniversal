@@ -1,15 +1,11 @@
 {
   "version": 2,
   "buildCommand": "npm run build:vercel",
+  "outputDirectory": "public",
   "functions": {
     "api/**/*.js": {
       "maxDuration": 60,
       "memory": 1024
     }
-  },
-  "rewrites": [
-    { "source": "/styles/:path*", "destination": "/src/styles/:path*" },
-    { "source": "/js/:path*", "destination": "/src/js/:path*" },
-    { "source": "/", "destination": "/src/index.html" }
-  ]
+  }
 }
