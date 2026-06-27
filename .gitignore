@@ -7,3 +7,6 @@ Thumbs.db
 downloads/
 .env
 .env.*
+# Keep bin/ folder but ignore downloaded binary (user runs npm run setup)
+bin/yt-dlp
+bin/yt-dlp.exe

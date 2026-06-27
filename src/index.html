@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data:;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' http://localhost:*; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data:;">
   <title>Converter Universal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -85,12 +85,19 @@
         </div>
 
         <div class="formats-section">
-          <h3 class="section-title">Choose format</h3>
+          <div class="formats-header">
+            <h3 class="section-title">Choose format</h3>
+            <div class="format-tabs" id="format-tabs">
+              <button type="button" class="format-tab active" data-filter="all">All</button>
+              <button type="button" class="format-tab" data-filter="video">Video</button>
+              <button type="button" class="format-tab" data-filter="audio">Audio</button>
+            </div>
+          </div>
           <div class="format-grid" id="format-grid"></div>
         </div>
 
         <div class="download-bar">
-          <div class="folder-picker">
+          <div class="folder-picker" id="folder-picker">
             <span class="folder-label">Save to</span>
             <button type="button" class="folder-path" id="btn-folder" title="Change folder">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
@@ -157,7 +164,7 @@
         <p class="setting-path" id="setting-folder-path"></p>
         <div class="install-hint hidden" id="install-hint">
           <p><strong>yt-dlp not found.</strong> Install it to enable downloads:</p>
-          <code id="install-command">winget install yt-dlp</code>
+          <code id="install-command">npm run setup</code>
         </div>
       </div>
     </div>
@@ -166,6 +173,7 @@
   <!-- Toast -->
   <div class="toast hidden" id="toast" role="status"></div>
 
+  <script src="js/api.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

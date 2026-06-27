@@ -12,11 +12,19 @@ class YtDlpService {
   }
 
   resolveBinary() {
-    const candidates = process.platform === 'win32'
-      ? ['yt-dlp.exe', 'yt-dlp']
-      : ['yt-dlp', 'yt-dlp.exe'];
+    const localBin = path.join(__dirname, '..', '..', 'bin',
+      process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp');
 
-    return candidates[0];
+    if (fs.existsSync(localBin)) return localBin;
+
+    return process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp';
+  }
+
+  getInstallHint() {
+    if (process.platform === 'win32') {
+      return 'Run: npm run setup   (downloads yt-dlp to bin/)';
+    }
+    return 'Run: npm run setup   OR   pip install yt-dlp';
   }
 
   async checkInstalled() {
@@ -29,16 +37,17 @@ class YtDlpService {
         installed: false,
         version: null,
         binary: this.binary,
-        installHint: process.platform === 'win32'
-          ? 'winget install yt-dlp  OR  pip install yt-dlp'
-          : 'pip install yt-dlp  OR  brew install yt-dlp',
+        installHint: this.getInstallHint(),
       };
     }
   }
 
   async run(args, onProgress) {
     return new Promise((resolve, reject) => {
-      const proc = spawn(this.binary, args, { shell: process.platform === 'win32' });
+      const proc = spawn(this.binary, args, {
+        shell: false,
+        windowsHide: true,
+      });
       this.activeProcess = proc;
 
       let stdout = '';
@@ -147,7 +156,7 @@ class YtDlpService {
     const presets = [];
 
     const videoFormats = formats.filter((f) => f.has_video && f.resolution !== 'audio');
-    const audioFormats = formats.filter((f) => f.has_audio && !f.has_video);
+    const audioOnlyFormats = formats.filter((f) => f.has_audio && !f.has_video);
 
     const bestVideo = videoFormats
       .filter((f) => f.has_audio)
@@ -156,16 +165,18 @@ class YtDlpService {
     const bestVideoOnly = videoFormats
       .sort((a, b) => (parseInt(b.resolution) || 0) - (parseInt(a.resolution) || 0))[0];
 
-    const bestAudio = audioFormats
+    const bestAudio = audioOnlyFormats
       .sort((a, b) => (b.filesize || 0) - (a.filesize || 0))[0];
 
     presets.push({
       id: 'best',
-      label: 'Best quality',
+      label: 'Best quality (MP4)',
       description: 'Highest available video + audio',
       format: 'bestvideo+bestaudio/best',
       ext: 'mp4',
       icon: 'video',
+      category: 'video',
+      mergeFormat: 'mp4',
     });
 
     if (bestVideo) {
@@ -185,39 +196,91 @@ class YtDlpService {
       if (match) {
         presets.push({
           id: `video-${res}`,
-          label: `${res}p video`,
+          label: `${res}p MP4`,
           description: match.has_audio ? 'Video with audio' : 'Video (audio merged if needed)',
           format: match.has_audio ? match.format_id : `bestvideo[height<=${res}]+bestaudio/best[height<=${res}]`,
           ext: 'mp4',
           icon: 'video',
+          category: 'video',
+          mergeFormat: 'mp4',
         });
       }
     }
 
     presets.push({
       id: 'audio-best',
-      label: 'Audio only (best)',
-      description: 'Best audio quality',
+      label: 'Best audio (native)',
+      description: 'Original audio without conversion',
       format: 'bestaudio/best',
       ext: 'm4a',
       icon: 'audio',
+      category: 'audio',
     });
 
     presets.push({
       id: 'audio-mp3',
-      label: 'MP3 audio',
-      description: 'Convert to MP3',
+      label: 'MP3',
+      description: 'Most compatible audio format',
       format: 'bestaudio/best',
       ext: 'mp3',
       icon: 'audio',
-      postProcess: 'mp3',
+      category: 'audio',
+      audioFormat: 'mp3',
     });
 
-    return presets;
+    const audioExportFormats = [
+      { id: 'audio-wav', label: 'WAV', ext: 'wav', desc: 'Uncompressed, highest fidelity' },
+      { id: 'audio-flac', label: 'FLAC', ext: 'flac', desc: 'Lossless compressed audio' },
+      { id: 'audio-m4a', label: 'M4A / AAC', ext: 'm4a', desc: 'Apple & streaming quality' },
+      { id: 'audio-aac', label: 'AAC', ext: 'aac', desc: 'High quality, small file size' },
+      { id: 'audio-ogg', label: 'OGG Vorbis', ext: 'ogg', desc: 'Open-source audio' },
+      { id: 'audio-opus', label: 'Opus', ext: 'opus', desc: 'Modern, efficient codec' },
+    ];
+
+    for (const af of audioExportFormats) {
+      presets.push({
+        id: af.id,
+        label: af.label,
+        description: af.desc,
+        format: 'bestaudio/best',
+        ext: af.ext,
+        icon: 'audio',
+        category: 'audio',
+        audioFormat: af.ext === 'm4a' ? 'm4a' : af.ext,
+      });
+    }
+
+    presets.push({
+      id: 'video-webm',
+      label: 'WebM (best)',
+      description: 'Open web video format',
+      format: 'bestvideo+bestaudio/best',
+      ext: 'webm',
+      icon: 'video',
+      category: 'video',
+      mergeFormat: 'webm',
+    });
+
+    presets.push({
+      id: 'video-mkv',
+      label: 'MKV (best)',
+      description: 'Matroska container, flexible codecs',
+      format: 'bestvideo+bestaudio/best',
+      ext: 'mkv',
+      icon: 'video',
+      category: 'video',
+      mergeFormat: 'mkv',
+    });
+
+    return presets.map((p) => ({
+      ...p,
+      category: p.category || (p.icon === 'audio' ? 'audio' : 'video'),
+    }));
   }
 
   async download(options, onProgress) {
-    const { url, format, ext, outputDir, title, postProcess } = options;
+    const { url, format, ext, outputDir, title, audioFormat, mergeFormat, postProcess } = options;
+    const audioFmt = audioFormat || postProcess;
 
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
@@ -241,8 +304,10 @@ class YtDlpService {
       '-o', outputTemplate,
     ];
 
-    if (postProcess === 'mp3') {
-      args.push('-x', '--audio-format', 'mp3', '--audio-quality', '0');
+    if (audioFmt) {
+      args.push('-x', '--audio-format', audioFmt, '--audio-quality', '0');
+    } else if (mergeFormat) {
+      args.push('--merge-output-format', mergeFormat);
     } else if (ext === 'mp4') {
       args.push('--merge-output-format', 'mp4');
     }

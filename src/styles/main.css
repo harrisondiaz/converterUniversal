@@ -486,6 +486,50 @@ body {
   margin-bottom: 12px;
 }
 
+.formats-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.formats-header .section-title { margin-bottom: 0; }
+
+.format-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  background: var(--bg-mid);
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+
+.format-tab {
+  padding: 5px 14px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.format-tab:hover { color: var(--text-secondary); }
+
+.format-tab.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(94, 234, 212, 0.2);
+}
+
+.format-card.hidden-filter { display: none; }
+
+
 .format-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));

@@ -1,4 +1,5 @@
 (() => {
+  const api = window.createApi();
   const $ = (sel) => document.querySelector(sel);
 
   const els = {
@@ -10,11 +11,12 @@
     btnCloseModal: $('#btn-close-modal'),
     btnModalFolder: $('#btn-modal-folder'),
     platformBadge: $('#platform-badge'),
-    platformName: document.querySelector('.platform-name'),
     ytdlpStatus: $('#ytdlp-status'),
     emptyState: $('#empty-state'),
     resultPanel: $('#result-panel'),
     formatGrid: $('#format-grid'),
+    formatTabs: $('#format-tabs'),
+    folderPicker: $('#folder-picker'),
     mediaTitle: $('#media-title'),
     mediaUploader: $('#media-uploader'),
     mediaDuration: $('#media-duration'),
@@ -26,7 +28,6 @@
     progressPercent: $('#progress-percent'),
     progressLabel: $('#progress-label'),
     modalBackdrop: $('#modal-backdrop'),
-    settingsModal: $('#settings-modal'),
     settingYtdlpInfo: $('#setting-ytdlp-info'),
     settingYtdlpBadge: $('#setting-ytdlp-badge'),
     settingFolderPath: $('#setting-folder-path'),
@@ -44,9 +45,9 @@
     ytdlpReady: false,
     analyzing: false,
     downloading: false,
+    formatFilter: 'all',
   };
 
-  // --- Modal (transitions.dev pattern) ---
   function openModal() {
     const backdrop = els.modalBackdrop;
     backdrop.classList.remove('hidden', 'is-closing');
@@ -56,10 +57,8 @@
   function closeModal() {
     const backdrop = els.modalBackdrop;
     if (!backdrop.classList.contains('is-open')) return;
-
     backdrop.classList.remove('is-open');
     backdrop.classList.add('is-closing');
-
     const closeDur = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--modal-close-dur')) || 150;
     setTimeout(() => {
       backdrop.classList.add('hidden');
@@ -67,18 +66,14 @@
     }, closeDur);
   }
 
-  // --- Toast ---
   let toastTimer;
   function showToast(message, type = 'info') {
     els.toast.textContent = message;
     els.toast.className = `toast show ${type}`;
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => {
-      els.toast.classList.remove('show');
-    }, 3500);
+    toastTimer = setTimeout(() => els.toast.classList.remove('show'), 3500);
   }
 
-  // --- Format helpers ---
   function formatDuration(seconds) {
     if (!seconds) return '';
     const h = Math.floor(seconds / 3600);
@@ -95,31 +90,33 @@
     return `…/${name}`.slice(-max);
   }
 
-  // --- Platform detection ---
+  function applyFormatFilter() {
+    els.formatGrid.querySelectorAll('.format-card').forEach((card) => {
+      const cat = card.dataset.category;
+      const show = state.formatFilter === 'all' || cat === state.formatFilter;
+      card.classList.toggle('hidden-filter', !show);
+    });
+  }
+
   async function updatePlatformBadge(url) {
     if (!url.trim()) {
       els.platformBadge.classList.add('hidden');
       els.btnAnalyze.disabled = true;
       return;
     }
-
-    const platform = await window.api.detectPlatform(url);
+    const platform = await api.detectPlatform(url);
     state.platform = platform;
-
     els.platformBadge.classList.remove('hidden');
     els.platformBadge.style.setProperty('--chip-color', platform.color);
     els.platformBadge.querySelector('.platform-dot').style.background = platform.color;
     els.platformBadge.querySelector('.platform-name').textContent = platform.name;
-
     const isValid = platform.id !== 'unknown' && /^https?:\/\//i.test(url.trim());
     els.btnAnalyze.disabled = !isValid || state.analyzing;
   }
 
-  // --- yt-dlp status ---
   async function checkYtdlp() {
-    const result = await window.api.checkYtdlp();
+    const result = await api.checkYtdlp();
     state.ytdlpReady = result.installed;
-
     els.ytdlpStatus.classList.remove('ready', 'error');
     if (result.installed) {
       els.ytdlpStatus.classList.add('ready');
@@ -139,25 +136,21 @@
     }
   }
 
-  // --- Analyze ---
   async function analyzeUrl() {
     const url = els.urlInput.value.trim();
     if (!url || state.analyzing) return;
-
     if (!state.ytdlpReady) {
       showToast('Install yt-dlp first — open Settings for instructions', 'error');
       openModal();
       return;
     }
-
     state.analyzing = true;
     state.url = url;
     els.btnAnalyze.disabled = true;
     els.btnAnalyze.querySelector('.btn-label').textContent = 'Analyzing…';
     els.btnAnalyze.querySelector('.btn-spinner').classList.remove('hidden');
-
     try {
-      const data = await window.api.getFormats(url);
+      const data = await api.getFormats(url);
       state.mediaData = data;
       state.selectedPreset = data.presets[0] || null;
       renderResults(data);
@@ -175,10 +168,7 @@
     els.emptyState.classList.add('hidden');
     els.resultPanel.classList.remove('hidden');
     els.resultPanel.classList.add('t-panel-reveal');
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => els.resultPanel.classList.add('is-visible'));
-    });
+    requestAnimationFrame(() => requestAnimationFrame(() => els.resultPanel.classList.add('is-visible')));
 
     els.mediaTitle.textContent = data.title;
     els.mediaUploader.textContent = data.uploader ? `by ${data.uploader}` : '';
@@ -198,6 +188,7 @@
     data.presets.forEach((preset) => {
       const card = document.createElement('button');
       card.type = 'button';
+      card.dataset.category = preset.category || 'video';
       card.className = 'format-card' + (state.selectedPreset?.id === preset.id ? ' selected' : '');
       card.innerHTML = `
         <span class="format-card-label">${preset.label}</span>
@@ -208,6 +199,7 @@
       els.formatGrid.appendChild(card);
     });
 
+    applyFormatFilter();
     els.btnDownload.disabled = !state.selectedPreset;
     els.progressWrap.classList.add('hidden');
   }
@@ -219,7 +211,20 @@
     els.btnDownload.disabled = false;
   }
 
-  // --- Download ---
+  function updateProgress(progress) {
+    const pct = Math.min(100, Math.round(progress.percent || 0));
+    els.progressFill.style.width = `${pct}%`;
+    els.progressPercent.textContent = `${pct}%`;
+    const labels = {
+      starting: 'Starting…',
+      downloading: 'Downloading…',
+      merging: 'Merging formats…',
+      extracting: 'Extracting audio…',
+      complete: 'Complete!',
+    };
+    els.progressLabel.textContent = labels[progress.status] || 'Processing…';
+  }
+
   async function startDownload() {
     if (!state.selectedPreset || !state.mediaData || state.downloading) return;
 
@@ -230,50 +235,43 @@
     els.progressPercent.textContent = '0%';
     els.progressLabel.textContent = 'Starting…';
 
-    const unsubscribe = window.api.onDownloadProgress((progress) => {
-      const pct = Math.min(100, Math.round(progress.percent || 0));
-      els.progressFill.style.width = `${pct}%`;
-      els.progressPercent.textContent = `${pct}%`;
+    const options = {
+      url: state.url,
+      format: state.selectedPreset.format,
+      ext: state.selectedPreset.ext,
+      title: state.mediaData.title,
+      outputDir: state.outputDir,
+      audioFormat: state.selectedPreset.audioFormat,
+      mergeFormat: state.selectedPreset.mergeFormat,
+    };
 
-      const labels = {
-        starting: 'Starting…',
-        downloading: 'Downloading…',
-        merging: 'Merging formats…',
-        extracting: 'Extracting audio…',
-        complete: 'Complete!',
-      };
-      els.progressLabel.textContent = labels[progress.status] || 'Processing…';
-    });
+    const unsubscribe = api.isWeb
+      ? null
+      : api.onDownloadProgress((progress) => updateProgress(progress));
 
     try {
-      const result = await window.api.download({
-        url: state.url,
-        format: state.selectedPreset.format,
-        ext: state.selectedPreset.ext,
-        title: state.mediaData.title,
-        outputDir: state.outputDir,
-        postProcess: state.selectedPreset.postProcess,
-      });
-
+      if (api.isWeb) {
+        await api.download(options, updateProgress);
+      } else {
+        await api.download(options);
+      }
       showToast('Download complete!', 'success');
       els.progressLabel.textContent = 'Complete!';
-
-      if (result.filePath) {
-        setTimeout(() => window.api.openFolder(state.outputDir), 800);
+      if (!api.isWeb) {
+        setTimeout(() => api.openFolder(state.outputDir), 800);
       }
     } catch (err) {
       showToast(err.message || 'Download failed', 'error');
       els.progressWrap.classList.add('hidden');
     } finally {
-      unsubscribe();
+      if (unsubscribe) unsubscribe();
       state.downloading = false;
       els.btnDownload.disabled = false;
     }
   }
 
-  // --- Folder ---
   async function pickFolder() {
-    const folder = await window.api.selectFolder();
+    const folder = await api.selectFolder();
     if (folder) {
       state.outputDir = folder;
       els.folderPath.textContent = truncatePath(folder);
@@ -281,7 +279,6 @@
     }
   }
 
-  // --- Events ---
   els.urlInput.addEventListener('input', (e) => {
     updatePlatformBadge(e.target.value);
     if (!e.target.value.trim()) {
@@ -299,26 +296,39 @@
     setTimeout(() => updatePlatformBadge(els.urlInput.value), 50);
   });
 
+  els.formatTabs.addEventListener('click', (e) => {
+    const tab = e.target.closest('.format-tab');
+    if (!tab) return;
+    els.formatTabs.querySelectorAll('.format-tab').forEach((t) => t.classList.remove('active'));
+    tab.classList.add('active');
+    state.formatFilter = tab.dataset.filter;
+    applyFormatFilter();
+  });
+
   els.btnAnalyze.addEventListener('click', analyzeUrl);
   els.btnDownload.addEventListener('click', startDownload);
   els.btnFolder.addEventListener('click', pickFolder);
   els.btnModalFolder.addEventListener('click', pickFolder);
   els.btnSettings.addEventListener('click', openModal);
   els.btnCloseModal.addEventListener('click', closeModal);
-
   els.modalBackdrop.addEventListener('click', (e) => {
     if (e.target === els.modalBackdrop) closeModal();
   });
-
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeModal();
   });
 
-  // --- Init ---
   async function init() {
-    state.outputDir = await window.api.getDefaultFolder();
-    els.folderPath.textContent = truncatePath(state.outputDir);
-    els.settingFolderPath.textContent = state.outputDir;
+    if (api.isWeb) {
+      els.folderPicker.classList.add('hidden');
+      document.querySelector('.setting-row:nth-of-type(2)')?.classList.add('hidden');
+      state.outputDir = 'browser';
+      els.settingFolderPath.textContent = 'Files download to your browser folder';
+    } else {
+      state.outputDir = await api.getDefaultFolder();
+      els.folderPath.textContent = truncatePath(state.outputDir);
+      els.settingFolderPath.textContent = state.outputDir;
+    }
     await checkYtdlp();
   }
 

@@ -18,15 +18,19 @@ A desktop app to download videos and audio from **YouTube**, **TikTok**, **Insta
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) (required for downloads)
 - [ffmpeg](https://ffmpeg.org/) (recommended for merging video + audio)
 
-### Install yt-dlp (Windows)
+### Install yt-dlp (Windows — no winget/pip needed)
+
+```powershell
+npm run setup
+```
+
+This downloads `yt-dlp.exe` into the `bin/` folder. The app finds it automatically.
+
+Alternative (if you have winget or pip):
 
 ```powershell
 winget install yt-dlp
-```
-
-Or with pip:
-
-```powershell
+# OR
 pip install yt-dlp
 ```
 
@@ -38,10 +42,34 @@ winget install ffmpeg
 
 ## Quick start
 
+### Desktop app (Electron)
+
 ```powershell
 npm install
 npm start
 ```
+
+### Web mode (browser)
+
+Runs a local server — open it in Chrome, Firefox, Edge, etc.
+
+```powershell
+npm install
+npm run web
+```
+
+Then open **http://localhost:3847** in your browser.
+
+> **Note:** Web mode still needs `yt-dlp` and `ffmpeg` installed on the **server machine** (your PC). Downloads are processed locally and sent to your browser — nothing runs in the cloud unless you deploy the server elsewhere.
+
+## Supported formats
+
+| Type | Formats |
+|------|---------|
+| **Video** | MP4, WebM, MKV — best quality or 1080p / 720p / 480p / 360p |
+| **Audio** | MP3, WAV, FLAC, M4A/AAC, OGG, Opus — plus native best audio |
+
+All audio conversions use ffmpeg via yt-dlp. WAV and FLAC give the highest quality; MP3 is the most compatible.
 
 ## Usage
 
