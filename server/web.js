@@ -3,15 +3,15 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const { randomUUID } = require('crypto');
-const { YtDlpService } = require('../electron/services/ytdlp');
-const { detectPlatform } = require('../electron/services/platform');
+const { getYtdlp } = require('../lib/ytdlp');
+const { detectPlatform } = require('../lib/platform');
+const jobs = require('../lib/jobs');
 
 const DEFAULT_PORT = 3847;
 const PORT = Number(process.env.PORT) || DEFAULT_PORT;
 const app = express();
-const ytdlp = new YtDlpService();
+const ytdlp = getYtdlp();
 
-const jobs = new Map();
 const tempRoot = path.join(os.tmpdir(), 'converter-universal');
 
 if (!fs.existsSync(tempRoot)) fs.mkdirSync(tempRoot, { recursive: true });
@@ -47,39 +47,17 @@ app.post('/api/download/start', async (req, res) => {
     if (!url || !format) return res.status(400).json({ error: 'Missing download options' });
 
     const jobId = randomUUID();
-    const outputDir = path.join(tempRoot, jobId);
-    fs.mkdirSync(outputDir, { recursive: true });
-
-    jobs.set(jobId, { status: 'starting', percent: 0, filePath: null, error: null });
+    jobs.create(jobId);
+    const outputDir = jobs.jobDir(jobId);
 
     res.json({ jobId });
 
     ytdlp.download(
       { url, format, ext, title, outputDir, audioFormat, mergeFormat },
-      (progress) => {
-        const job = jobs.get(jobId);
-        if (job) {
-          job.status = progress.status;
-          job.percent = progress.percent;
-        }
-      },
+      (progress) => jobs.update(jobId, progress),
     )
-      .then((result) => {
-        const job = jobs.get(jobId);
-        if (job) {
-          job.status = 'complete';
-          job.percent = 100;
-          job.filePath = result.filePath;
-          job.fileName = result.filePath ? path.basename(result.filePath) : `${title || 'download'}.${ext}`;
-        }
-      })
-      .catch((err) => {
-        const job = jobs.get(jobId);
-        if (job) {
-          job.status = 'error';
-          job.error = err.message;
-        }
-      });
+      .then((result) => jobs.complete(jobId, result))
+      .catch((err) => jobs.fail(jobId, err.message));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -104,24 +82,9 @@ app.get('/api/download/:jobId/file', (req, res) => {
 
   res.download(job.filePath, job.fileName, (err) => {
     if (err) console.error('Download send error:', err.message);
-    setTimeout(() => cleanupJob(req.params.jobId), 5000);
+    setTimeout(() => jobs.cleanup(req.params.jobId), 5000);
   });
 });
-
-function cleanupJob(jobId) {
-  const job = jobs.get(jobId);
-  if (!job) return;
-  const dir = path.join(tempRoot, jobId);
-  if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true });
-  jobs.delete(jobId);
-}
-
-setInterval(() => {
-  const cutoff = Date.now() - 60 * 60 * 1000;
-  for (const [id, job] of jobs) {
-    if (job.createdAt && job.createdAt < cutoff) cleanupJob(id);
-  }
-}, 30 * 60 * 1000);
 
 function startServer(port) {
   const server = app.listen(port, () => {

@@ -7,7 +7,8 @@
     "start": "electron .",
     "dev": "electron . --dev",
     "web": "node server/web.js",
-    "setup": "node scripts/setup-ytdlp.js"
+    "setup": "node scripts/setup-ytdlp.js",
+    "build:vercel": "node scripts/setup-ytdlp.js --linux"
   },
   "keywords": [
     "youtube",
@@ -22,6 +23,8 @@
     "electron": "^33.2.1"
   },
   "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@vercel/functions": "^2.0.0",
     "express": "^4.22.2"
   },
   "allowScripts": {

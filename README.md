@@ -106,6 +106,35 @@ converterUniversal/
 └── package.json
 ```
 
+## Deploy on Vercel
+
+The project includes serverless API routes and a static frontend ready for Vercel.
+
+### One-click deploy
+
+1. Push this repo to GitHub
+2. Import the project at [vercel.com/new](https://vercel.com/new)
+3. Vercel runs `npm run build:vercel` (downloads Linux yt-dlp binary)
+4. Deploy
+
+Or with the CLI:
+
+```powershell
+npm i -g vercel
+vercel
+```
+
+### Vercel limitations
+
+| Topic | Detail |
+|-------|--------|
+| **Timeout** | Downloads up to **60 seconds** (Pro plan). Long videos may fail on Hobby (10s). |
+| **Storage** | Temp files in `/tmp` (~512 MB). Large 4K files may fail. |
+| **Best for** | Short clips, audio, reels, TikToks |
+| **Local use** | No limits — use `npm run web` or `npm start` on your PC |
+
+> For heavy daily use, keep the desktop/local web mode. Vercel is best for sharing the UI publicly with light downloads.
+
 ## License
 
 MIT — Harrison Diaz

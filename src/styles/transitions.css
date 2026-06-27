@@ -1,26 +1,18 @@
 /* transitions-dev — universal install block */
 :root {
-  --resize-dur: 300ms;
-  --resize-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --modal-open-dur: 250ms;
-  --modal-close-dur: 150ms;
-  --modal-scale: 0.96;
-  --modal-scale-close: 0.96;
+  --modal-open-dur: 280ms;
+  --modal-close-dur: 180ms;
+  --modal-scale: 0.94;
+  --modal-scale-close: 0.97;
   --modal-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --panel-open-dur: 400ms;
   --panel-close-dur: 350ms;
   --panel-translate-y: 24px;
   --panel-blur: 2px;
   --panel-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --text-swap-dur: 200ms;
-  --text-swap-translate-y: 8px;
-  --text-swap-blur: 2px;
-  --text-swap-ease: ease-out;
-  --check-opacity-dur: 550ms;
-  --check-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Modal open / close — transitions.dev */
+/* Modal open / close — transitions.dev pattern */
 .t-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -28,20 +20,33 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(4, 8, 16, 0.72);
-  backdrop-filter: blur(6px);
+  background: rgba(4, 8, 16, 0);
+  backdrop-filter: blur(0px);
+  visibility: visible;
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--modal-open-dur) var(--modal-ease);
+  transition:
+    opacity var(--modal-open-dur) var(--modal-ease),
+    background var(--modal-open-dur) var(--modal-ease),
+    backdrop-filter var(--modal-open-dur) var(--modal-ease);
+}
+
+.t-modal-backdrop.is-resting {
+  visibility: hidden;
 }
 
 .t-modal-backdrop.is-open {
   opacity: 1;
   pointer-events: auto;
+  background: rgba(4, 8, 16, 0.72);
+  backdrop-filter: blur(8px);
 }
 
 .t-modal-backdrop.is-closing {
   opacity: 0;
+  pointer-events: none;
+  background: rgba(4, 8, 16, 0);
+  backdrop-filter: blur(0px);
   transition-duration: var(--modal-close-dur);
 }
 
@@ -70,7 +75,7 @@
   transition-duration: var(--modal-close-dur);
 }
 
-/* Panel reveal for result section */
+/* Panel reveal */
 .t-panel-reveal {
   opacity: 0;
   transform: translateY(var(--panel-translate-y));
@@ -95,7 +100,8 @@
     transition: none !important;
   }
 
-  .t-modal-backdrop.is-open .t-modal {
+  .t-modal-backdrop.is-open .t-modal,
+  .t-modal-backdrop.is-closing .t-modal {
     transform: none;
   }
 }

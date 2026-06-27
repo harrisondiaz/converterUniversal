@@ -5,8 +5,11 @@ const https = require('https');
 
 const root = path.join(__dirname, '..');
 const binDir = path.join(root, 'bin');
-const target = path.join(binDir, process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp');
-const url = process.platform === 'win32'
+const forceLinux = process.argv.includes('--linux');
+const platform = forceLinux ? 'linux' : process.platform;
+const isWin = platform === 'win32';
+const target = path.join(binDir, isWin ? 'yt-dlp.exe' : 'yt-dlp');
+const url = isWin
   ? 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe'
   : 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp';
 
@@ -37,18 +40,16 @@ function download(fileUrl, dest) {
 async function main() {
   if (!fs.existsSync(binDir)) fs.mkdirSync(binDir, { recursive: true });
 
-  console.log('Downloading yt-dlp...');
+  console.log(`Downloading yt-dlp for ${platform}...`);
   await download(url, target);
-  if (process.platform !== 'win32') fs.chmodSync(target, 0o755);
+  if (!isWin) fs.chmodSync(target, 0o755);
 
   const version = execFileSync(target, ['--version'], { encoding: 'utf8' }).trim().split('\n')[0];
   console.log(`\nInstalled: ${target}`);
   console.log(`Version:   ${version}`);
-  console.log('\nRestart the app: npm run web  or  npm start');
 }
 
 main().catch((err) => {
   console.error('Setup failed:', err.message);
-  console.error('Manual download: https://github.com/yt-dlp/yt-dlp/releases');
   process.exit(1);
 });

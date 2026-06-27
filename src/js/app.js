@@ -50,19 +50,26 @@
 
   function openModal() {
     const backdrop = els.modalBackdrop;
-    backdrop.classList.remove('hidden', 'is-closing');
-    requestAnimationFrame(() => backdrop.classList.add('is-open'));
+    backdrop.classList.remove('is-resting', 'is-closing');
+    backdrop.setAttribute('aria-hidden', 'false');
+    void backdrop.offsetWidth;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => backdrop.classList.add('is-open'));
+    });
   }
 
   function closeModal() {
     const backdrop = els.modalBackdrop;
     if (!backdrop.classList.contains('is-open')) return;
+
     backdrop.classList.remove('is-open');
     backdrop.classList.add('is-closing');
-    const closeDur = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--modal-close-dur')) || 150;
+    backdrop.setAttribute('aria-hidden', 'true');
+
+    const closeDur = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--modal-close-dur')) || 180;
     setTimeout(() => {
-      backdrop.classList.add('hidden');
       backdrop.classList.remove('is-closing');
+      backdrop.classList.add('is-resting');
     }, closeDur);
   }
 
