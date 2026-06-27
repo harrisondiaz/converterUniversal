@@ -1,0 +1,101 @@
+/* transitions-dev — universal install block */
+:root {
+  --resize-dur: 300ms;
+  --resize-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --modal-open-dur: 250ms;
+  --modal-close-dur: 150ms;
+  --modal-scale: 0.96;
+  --modal-scale-close: 0.96;
+  --modal-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --panel-open-dur: 400ms;
+  --panel-close-dur: 350ms;
+  --panel-translate-y: 24px;
+  --panel-blur: 2px;
+  --panel-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --text-swap-dur: 200ms;
+  --text-swap-translate-y: 8px;
+  --text-swap-blur: 2px;
+  --text-swap-ease: ease-out;
+  --check-opacity-dur: 550ms;
+  --check-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Modal open / close — transitions.dev */
+.t-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 8, 16, 0.72);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--modal-open-dur) var(--modal-ease);
+}
+
+.t-modal-backdrop.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.t-modal-backdrop.is-closing {
+  opacity: 0;
+  transition-duration: var(--modal-close-dur);
+}
+
+.t-modal {
+  width: min(440px, calc(100vw - 32px));
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: 16px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+  transform: scale(var(--modal-scale));
+  opacity: 0;
+  will-change: transform, opacity;
+  transition:
+    transform var(--modal-open-dur) var(--modal-ease),
+    opacity var(--modal-open-dur) var(--modal-ease);
+}
+
+.t-modal-backdrop.is-open .t-modal {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.t-modal-backdrop.is-closing .t-modal {
+  transform: scale(var(--modal-scale-close));
+  opacity: 0;
+  transition-duration: var(--modal-close-dur);
+}
+
+/* Panel reveal for result section */
+.t-panel-reveal {
+  opacity: 0;
+  transform: translateY(var(--panel-translate-y));
+  filter: blur(var(--panel-blur));
+  will-change: transform, opacity, filter;
+  transition:
+    transform var(--panel-open-dur) var(--panel-ease),
+    opacity var(--panel-open-dur) var(--panel-ease),
+    filter var(--panel-open-dur) var(--panel-ease);
+}
+
+.t-panel-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-modal-backdrop,
+  .t-modal,
+  .t-panel-reveal {
+    transition: none !important;
+  }
+
+  .t-modal-backdrop.is-open .t-modal {
+    transform: none;
+  }
+}
