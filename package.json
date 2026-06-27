@@ -1,0 +1,25 @@
+{
+  "name": "converter-universal",
+  "version": "1.0.0",
+  "description": "Universal media downloader for YouTube, TikTok, Instagram and more",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev"
+  },
+  "keywords": [
+    "youtube",
+    "tiktok",
+    "instagram",
+    "downloader",
+    "yt-dlp"
+  ],
+  "author": "Harrison Diaz",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.2.1"
+  },
+  "allowScripts": {
+    "electron@33.4.11": true
+  }
+}
